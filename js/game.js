@@ -274,7 +274,37 @@
     const k = KEYMAP[e.key];
     if (k) keys[k] = false;
   });
-  window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+  window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; touch = null; });
+
+  // ---------- タッチ（iPad）：ゆびで なぞった 向きに あるく ----------
+  //   ゆびを 置いた所から 動かした 向きへ あるく。はなすと 止まる。
+  //   動かさずに はなす（タップ）と セリフが すすむ。
+  const TOUCH_DEAD = 12;           // これより 小さい 動きは「タップ」と みなす（px）
+  let touch = null;                // { id, x0, y0, vx, vy, moved }
+
+  canvas.addEventListener('pointerdown', e => {
+    if (touch) return;
+    touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, vx: 0, vy: 0, moved: false };
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* なくても 動く */ }
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!touch || e.pointerId !== touch.id) return;
+    const dx = e.clientX - touch.x0, dy = e.clientY - touch.y0;
+    const d = Math.hypot(dx, dy);
+    if (d < TOUCH_DEAD) { touch.vx = 0; touch.vy = 0; return; }
+    touch.moved = true;
+    touch.vx = dx / d;
+    touch.vy = dy / d;
+  });
+  function touchEnd(e) {
+    if (!touch || e.pointerId !== touch.id) return;
+    const tapped = !touch.moved && e.type === 'pointerup';
+    touch = null;
+    if (tapped) advance();
+  }
+  canvas.addEventListener('pointerup', touchEnd);
+  canvas.addEventListener('pointercancel', touchEnd);
 
   ui.dialog.addEventListener('click', advance);
   $('startBtn').addEventListener('click', startGame);
@@ -305,6 +335,7 @@
       let vx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
       let vy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
       if (vx && vy) { vx *= Math.SQRT1_2; vy *= Math.SQRT1_2; }
+      if (!vx && !vy && touch) { vx = touch.vx; vy = touch.vy; }
       const sp = STORY.walkSpeed * dt;
       const nx = player.x + vx * sp, ny = player.y + vy * sp;
       if (!blocked(nx, player.y)) player.x = nx;

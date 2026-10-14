@@ -10,6 +10,12 @@ html, body {
   font-family: 'Mochiy Pop One', 'Hiragino Maru Gothic ProN', 'Meiryo', sans-serif;
   color: #000;
   user-select: none;
+  -webkit-user-select: none;
+  /* iPad：ゆびで なぞっても ページが 動いたり 拡大したり しないように */
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #screen {
