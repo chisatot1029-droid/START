@@ -113,7 +113,7 @@ const STORY = {
         monster('alone');                                                   // (62)(63) 食べられてしまう
         await wait(900);
         await say('バケモノ', '……………。', { face: 'monster' });             // (64)
-        await monsterWalk(-1300, 1800);                                     // (65)〜(68)
+        await monsterWalk(-1300, 3600);                                     // (65)〜(68)
         monster('none');
         await walkTo(900, 700);                                             // (69)
         await say('主人公', 'え…？ 死んだ…？\n何が起きたんだ？', { face: 'hero' }); // (72)
