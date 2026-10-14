@@ -502,6 +502,32 @@
   // ---------- 描画 ----------
   function ready(img) { return img.complete && img.naturalWidth > 0; }
 
+  // 時計（show('ring') の あいだは「ピピピピッ」に あわせて ぴょんぴょん はねる）
+  const RING_CYCLE = 1000;         // 「ピピピピッ」1回分（ミリ秒）
+  const RING_HOPS = 4;             // 1回で はねる 数
+  const RING_HOP_MS = 110;         // 1回 はねる 時間
+  const RING_HEIGHT = 16;          // はねる 高さ（px）
+  const RING_TILT = 0.14;          // かたむき（ラジアン）
+  function drawWatch(x, y) {
+    const img = IMG.watch;
+    let dy = 0, tilt = 0;
+    if (shown.ring) {
+      const t = performance.now() % RING_CYCLE;
+      const hop = Math.floor(t / RING_HOP_MS);
+      if (hop < RING_HOPS) {
+        const p = (t % RING_HOP_MS) / RING_HOP_MS;
+        dy = -Math.sin(p * Math.PI) * RING_HEIGHT;
+        tilt = (hop % 2 ? -1 : 1) * Math.sin(p * Math.PI) * RING_TILT;
+      }
+    }
+    const cx = x + img.width / 2, cyw = y + img.height;   // 下のはしを 中心に かたむける
+    ctx.save();
+    ctx.translate(cx, cyw + dy);
+    ctx.rotate(tilt);
+    ctx.drawImage(img, -img.width / 2, -img.height);
+    ctx.restore();
+  }
+
   function draw() {
     ctx.fillStyle = '#eaf2d7';
     ctx.fillRect(0, 0, W, H);
@@ -525,7 +551,7 @@
     const px = Math.round(player.x - PLAYER_FOOT.x);
     const py = Math.round(player.y - PLAYER_FOOT.y - cy + bob);
     if (ready(IMG.player)) ctx.drawImage(IMG.player, px, py);
-    if (shown.watch && ready(IMG.watch)) ctx.drawImage(IMG.watch, px + 112, py - 52);
+    if (shown.watch && ready(IMG.watch)) drawWatch(px + 112, py - 52);
     if (shown.exclaim && ready(IMG.exclaim)) ctx.drawImage(IMG.exclaim, px + 108, py - 20);
 
     // まぶた

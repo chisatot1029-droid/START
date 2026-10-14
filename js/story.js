@@ -13,6 +13,7 @@
 //   await fadeOut('black' か 'white'), await fadeIn()    … 暗転 / 白く光る
 //   await blink()                                        … まばたき して 目をさます（動画の かわり）
 //   show('watch') / hide('watch')                        … 時計（主人公の 右うえ）
+//   show('ring') / hide('ring')                          … 時計が 鳴って はねる（watch と いっしょに つかう）
 //   show('exclaim') / hide('exclaim')                    … 「！」マーク
 //   monster('full' / 'alone' / 'none')                   … バケモノの 絵（つかまった人ごと / バケモノだけ / なし）
 //   await monsterWalk(-1300, 1600)                       … バケモノが 横に うごく（距離, ミリ秒）
@@ -118,12 +119,14 @@ const STORY = {
         await walkTo(900, 700);                                             // (69)
         await say('主人公', 'え…？ 死んだ…？\n何が起きたんだ？', { face: 'hero' }); // (72)
         show('watch');
+        show('ring');
         await say('', 'ピピピピッピピピピッ…');                              // (73)
         await say('主人公', 'また？', { face: 'hero' });                    // (74)
         while ((await choose(['止める', '止めない'])) === '止めない') {      // (75)
           note('「止めない」の先は まだ デザインがありません（仮）');
           await say('', 'ピピピピッピピピピッ…');
         }
+        hide('ring');
         await say('', 'ピッ。');                                            // (76)
         hide('watch');
 
