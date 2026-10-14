@@ -1,0 +1,186 @@
+/* 色や大きさは 田野さんの Figma（iPad Pro 11インチ 1194×834）に あわせています。
+   #screen の font-size が 画面の幅に あわせて変わるので、
+   1em ＝ Figma の 10px くらい です。 */
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #151f10;
+  overflow: hidden;
+  font-family: 'Mochiy Pop One', 'Hiragino Maru Gothic ProN', 'Meiryo', sans-serif;
+  color: #000;
+  user-select: none;
+}
+
+#screen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  background: #eaf2d7;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+button { font: inherit; cursor: pointer; }
+.hidden { display: none !important; }
+
+/* ---------- 暗転・白い光 ---------- */
+#fade {
+  position: absolute;
+  inset: 0;
+  background: #151f10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s;
+}
+
+/* ---------- 会話ウィンドウ（Figma：x108 y39 978×214、黒わく 4px） ---------- */
+#dialog {
+  position: absolute;
+  left: 9.05%;
+  width: 81.9%;
+  top: 4.7%;
+  height: 25.7%;
+  box-sizing: border-box;
+  background: #fff;
+  border: 0.4em solid #000;
+  cursor: pointer;
+}
+#dialog.bottom { top: auto; bottom: 8.5%; left: 7.8%; }
+
+#speaker {
+  position: absolute;
+  left: 3.6%;
+  top: 11%;
+  font-size: 1.8em;
+}
+
+#face {
+  position: absolute;
+  left: 4.6%;
+  top: 33%;
+  height: 54%;
+}
+
+#text {
+  position: absolute;
+  left: 25.4%;
+  right: 8%;
+  top: 30%;
+  font-size: 3.6em;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+#dialog.noFace #text { left: 25.4%; }
+
+#nextMark {
+  position: absolute;
+  right: 2.6%;
+  bottom: 9%;
+  font-size: 3em;
+  line-height: 1;
+  animation: blink 0.9s steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0.15; } }
+
+/* 選択肢（Figma：こい緑のボタン 373×85、角丸） */
+#choices {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6.5%;
+  padding: 0 8%;
+}
+#dialog.choosing #choices { display: flex; }
+#dialog.choosing #text,
+#dialog.choosing #face,
+#dialog.choosing #nextMark { display: none; }
+#dialog.choosing { cursor: default; }
+#dialog.choosing #speaker { top: 9%; }
+
+.choice {
+  flex: 1 1 0;
+  max-width: 46%;
+  min-height: 40%;
+  background: #141f0e;
+  color: #fff;
+  border: none;
+  border-radius: 0.8em;
+  font-size: 3.4em;
+  line-height: 1.15;
+  padding: 0.2em 0.3em;
+  white-space: pre-line;
+}
+.choice:hover { background: #3d5a2a; }
+#choices.three .choice { font-size: 2.8em; min-height: 52%; margin-top: 3%; }
+
+/* ---------- タイトル（Figma：灰緑の丸 と 白いボタン） ---------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #151f10;
+}
+
+#menu {
+  width: 49.6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #8a8f85;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4.4em;
+}
+
+.menuBtn {
+  width: 74%;
+  height: 12.7%;
+  background: #fff;
+  color: #7a7a7a;
+  border: none;
+  border-radius: 1.4em;
+  font-size: 3.4em;
+}
+.menuBtn:hover { color: #141f0e; }
+.menuBtn.small { width: auto; height: auto; padding: 0.4em 1.6em; font-size: 2.6em; margin-top: 1.5em; }
+
+.howto {
+  position: absolute;
+  bottom: 3%;
+  color: #8a8f85;
+  font-size: 1.8em;
+  margin: 0;
+}
+
+.endTitle { color: #fff; font-size: 7em; margin: 0 0 0.3em; }
+#endText { color: #eaf2d7; font-size: 2.4em; text-align: center; line-height: 1.6; white-space: pre-line; margin: 0; }
+
+/* ---------- 演出用のメモ表示 ---------- */
+#toast {
+  position: absolute;
+  bottom: 4%;
+  right: 3%;
+  max-width: 60%;
+  color: #fff;
+  background: rgba(21, 31, 16, 0.85);
+  padding: 0.5em 1em;
+  font-size: 2em;
+  border-radius: 0.4em;
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; }

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>スターと（縦スクロール版 プロトタイプ）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 画面は iPad Pro 11インチ よこ置き（1194×834）と同じ比率 -->
+  <div id="screen">
+    <canvas id="canvas" width="1194" height="834"></canvas>
+
+    <div id="fade"></div>
+
+    <div id="dialog" class="hidden">
+      <div id="speaker"></div>
+      <img id="face" class="hidden" alt="">
+      <div id="text"></div>
+      <div id="choices"></div>
+      <div id="nextMark">▶</div>
+    </div>
+
+    <div id="title" class="overlay">
+      <div id="menu">
+        <button id="startBtn" class="menuBtn">スタート</button>
+        <button id="settingBtn" class="menuBtn">セッティング</button>
+      </div>
+      <p class="howto">↑ ↓ ← → キー：あるく　／　クリック・Enter：すすむ・えらぶ</p>
+    </div>
+
+    <div id="ending" class="overlay hidden">
+      <p class="endTitle">つづく</p>
+      <p id="endText"></p>
+      <button id="againBtn" class="menuBtn small">タイトルへ</button>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <script src="js/story.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
