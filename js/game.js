@@ -42,6 +42,7 @@
   let mode = 'title';              // title / play / event / end
   let player, camY, followCam, monsterState, monsterDX, shown, done, eyelid;
   const keys = { left: false, right: false, up: false, down: false };
+  let timeScale = 1;               // オート中は STORY.autoSpeed ばい速
 
   function reset() {
     for (const k in flags) delete flags[k];
@@ -64,6 +65,7 @@
 
   // ---------- 少しずつ 変化させる ----------
   function tween(ms, fn) {
+    ms /= timeScale;
     return new Promise(resolve => {
       if (ms <= 0) { fn(1); resolve(); return; }
       const t0 = performance.now();
@@ -80,7 +82,7 @@
   // ============================================================
   // story.js から 使う 命令
   // ============================================================
-  window.wait = ms => new Promise(r => setTimeout(r, ms));
+  window.wait = ms => new Promise(r => setTimeout(r, ms / timeScale));
 
   // ---- 会話 ----
   let advanceResolve = null, typeTimer = null, typing = false, fullText = '';
@@ -142,7 +144,7 @@
       n++;
       ui.text.textContent = chars.slice(0, n).join('');
       if (n >= chars.length) finishTyping();
-    }, 40);
+    }, 40 / timeScale);
   }
   function finishTyping() {
     clearInterval(typeTimer);
@@ -159,13 +161,13 @@
   // ---- 暗転 ----
   window.fadeOut = (color = 'black', ms = 600) => {
     ui.fade.style.background = color === 'white' ? '#ffffff' : '#151f10';
-    ui.fade.style.transition = `opacity ${ms}ms`;
+    ui.fade.style.transition = `opacity ${ms / timeScale}ms`;
     void ui.fade.offsetWidth;
     ui.fade.style.opacity = 1;
     return wait(ms);
   };
   window.fadeIn = (ms = 600) => {
-    ui.fade.style.transition = `opacity ${ms}ms`;
+    ui.fade.style.transition = `opacity ${ms / timeScale}ms`;
     ui.fade.style.opacity = 0;
     return wait(ms);
   };
@@ -310,6 +312,153 @@
   $('startBtn').addEventListener('click', startGame);
   $('settingBtn').addEventListener('click', () => note('セッティングは まだ じゅんびちゅう です'));
   $('againBtn').addEventListener('click', backToTitle);
+  $('autoBtn').addEventListener('click', startAuto);
+
+  // ============================================================
+  // オートモード：カーソルが うごいて、ひとりでに すすむ
+  //   えらぶ 選択肢は story.js の autoChoices。
+  //   ほんものの キー・クリック・タッチが あったら やめる。
+  // ============================================================
+  const cursorEl = $('cursor'), ringEl = $('cursorRing'), badgeEl = $('autoBadge');
+  const AUTO_DOOR_X = 606;         // まんなかの 入口の 中心（ここを めざして あるく）
+  let auto = false, autoMove = null, autoChoiceIdx = 0;
+  const cur = { x: W / 2, y: H / 2 }; // カーソルの 位置（Figma の px）
+
+  function placeCursor() {
+    cursorEl.style.left = (cur.x / W * 100) + '%';
+    cursorEl.style.top = (cur.y / H * 100) + '%';
+  }
+  function cursorTo(x, y) {
+    const fx = cur.x, fy = cur.y;
+    const ms = Math.min(900, 250 + Math.hypot(x - fx, y - fy) * 0.9);
+    return tween(ms, p => {
+      const e = ease(p);
+      cur.x = fx + (x - fx) * e;
+      cur.y = fy + (y - fy) * e;
+      placeCursor();
+    });
+  }
+  // 画面の 部品の まんなか（Figma の px）
+  function centerOf(el) {
+    const s = screenEl.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return {
+      x: (r.left + r.width / 2 - s.left) / s.width * W,
+      y: (r.top + r.height / 2 - s.top) / s.height * H,
+    };
+  }
+  async function clickFx() {
+    cursorEl.classList.add('pressed');
+    await wait(110);
+    cursorEl.classList.remove('pressed');
+    ringEl.classList.remove('pop');
+    void ringEl.offsetWidth;
+    ringEl.classList.add('pop');
+    await wait(120);
+  }
+  // ボタンの 上に カーソルを もっていって クリックする
+  async function autoClick(btn) {
+    const c = centerOf(btn);
+    await cursorTo(c.x, c.y);
+    if (!auto) return false;
+    btn.classList.add('hover');
+    await wait(350);
+    await clickFx();
+    btn.classList.remove('hover');
+    if (!auto || !btn.isConnected) return false;
+    btn.click();
+    return true;
+  }
+
+  async function startAuto() {
+    if (auto) return;
+    auto = true;
+    timeScale = STORY.autoSpeed || 1;
+    autoChoiceIdx = 0;
+    screenEl.classList.add('auto');
+    badgeEl.classList.remove('hidden');
+    cursorEl.classList.remove('hidden');
+    const c = centerOf($('autoBtn'));
+    cur.x = c.x; cur.y = c.y;
+    placeCursor();
+    await wait(400);
+    if (await autoClick($('startBtn'))) autopilot();
+  }
+
+  function stopAuto() {
+    auto = false;
+    timeScale = 1;
+    autoMove = null;
+    screenEl.classList.remove('auto');
+    badgeEl.classList.add('hidden');
+    cursorEl.classList.add('hidden');
+    cursorEl.classList.remove('pressed');
+  }
+
+  async function autopilot() {
+    while (auto) {
+      const d = ui.dialog;
+      const open = !d.classList.contains('hidden');
+      if (open && d.classList.contains('choosing')) {
+        await wait(800);
+        if (!auto) break;
+        const btns = [...ui.choices.children];
+        if (!btns.length) continue;
+        const want = (STORY.autoChoices || [])[autoChoiceIdx];
+        const same = b => want !== undefined && b.textContent.replace(/\n/g, '') === want.replace(/\n/g, '');
+        let b = btns.find(same);
+        if (b) autoChoiceIdx++;
+        await autoClick(b || btns[0]);
+      } else if (open) {
+        while (auto && typing) await wait(50);
+        await wait(900 + Math.min(1200, fullText.length * 25));   // 読む時間
+        if (!auto || d.classList.contains('hidden') || d.classList.contains('choosing')) continue;
+        const c = centerOf(ui.nextMark);
+        await cursorTo(c.x, c.y);
+        if (!auto) break;
+        await clickFx();
+        if (!auto) break;
+        advance();
+        await wait(150);
+      } else if (mode === 'play') {
+        await autoWalk();
+      } else if (mode === 'end') {
+        await wait(2500);
+        if (!auto) break;
+        if (await autoClick($('againBtn'))) stopAuto();
+      } else {
+        await wait(100);
+      }
+    }
+  }
+
+  // ゆびで なぞる操作の まね：主人公の 横を おして、上へ ひっぱる
+  async function autoWalk() {
+    const anchor = () => ({ x: player.x + 170, y: player.y - camY - 60 });
+    let a = anchor();
+    await cursorTo(a.x, a.y);
+    if (!auto || mode !== 'play') return;
+    cursorEl.classList.add('pressed');
+    await wait(200);
+    const t0 = performance.now();
+    while (auto && mode === 'play') {
+      let vx = Math.max(-1, Math.min(1, (AUTO_DOOR_X - player.x) / 80)) * 0.6, vy = -1;
+      const n = Math.hypot(vx, vy);
+      vx /= n; vy /= n;
+      autoMove = { vx, vy };
+      a = anchor();
+      const k = Math.min(1, (performance.now() - t0) / 250);
+      cur.x = a.x + vx * 90 * k;
+      cur.y = a.y + vy * 90 * k;
+      placeCursor();
+      await wait(16);
+    }
+    autoMove = null;
+    cursorEl.classList.remove('pressed');
+  }
+
+  // ほんものの 操作が あったら オートを やめる
+  window.addEventListener('keydown', e => { if (auto && e.isTrusted) stopAuto(); }, true);
+  window.addEventListener('pointerdown', e => { if (auto && e.isTrusted) stopAuto(); }, true);
 
   // ---------- 画面サイズ（1194:834 に あわせる） ----------
   function fit() {
@@ -336,7 +485,8 @@
       let vy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
       if (vx && vy) { vx *= Math.SQRT1_2; vy *= Math.SQRT1_2; }
       if (!vx && !vy && touch) { vx = touch.vx; vy = touch.vy; }
-      const sp = STORY.walkSpeed * dt;
+      if (!vx && !vy && autoMove) { vx = autoMove.vx; vy = autoMove.vy; }
+      const sp = STORY.walkSpeed * dt * timeScale;
       const nx = player.x + vx * sp, ny = player.y + vy * sp;
       if (!blocked(nx, player.y)) player.x = nx;
       if (!blocked(player.x, ny)) player.y = ny;
