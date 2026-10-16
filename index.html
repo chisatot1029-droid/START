@@ -33,6 +33,23 @@
       <p class="howto">↑ ↓ ← → キー・ゆびで なぞる：あるく　／　クリック・タップ・Enter：すすむ・えらぶ</p>
     </div>
 
+    <!-- セッティング（Figma 2）：音の 大きさを 3だんかいで えらぶ -->
+    <div id="settings" class="hidden">
+      <div class="setRow" style="top: 30%">
+        <span class="setLabel">BGM</span>
+        <button class="dot" data-key="bgm" data-level="0" aria-label="BGM 小"></button>
+        <button class="dot" data-key="bgm" data-level="1" aria-label="BGM 中"></button>
+        <button class="dot" data-key="bgm" data-level="2" aria-label="BGM 大"></button>
+      </div>
+      <div class="setRow" style="top: 47.2%">
+        <span class="setLabel">SE volume</span>
+        <button class="dot" data-key="se" data-level="0" aria-label="SE 小"></button>
+        <button class="dot" data-key="se" data-level="1" aria-label="SE 中"></button>
+        <button class="dot" data-key="se" data-level="2" aria-label="SE 大"></button>
+      </div>
+      <button id="backBtn">back</button>
+    </div>
+
     <div id="ending" class="overlay hidden">
       <p class="endTitle">つづく</p>
       <p id="endText"></p>

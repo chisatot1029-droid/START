@@ -15,8 +15,12 @@
 //   show('watch') / hide('watch')                        … 時計（主人公の 右うえ）
 //   show('ring') / hide('ring')                          … 時計が 鳴って はねる（watch と いっしょに つかう）
 //   show('exclaim') / hide('exclaim')                    … 「！」マーク
-//   monster('full' / 'alone' / 'none')                   … バケモノの 絵（つかまった人ごと / バケモノだけ / なし）
+//   monster('full' / 'eat' / 'alone' / 'apart' / 'down' / 'captive' / 'none')
+//       … バケモノと 人物Aの 絵（つかまえている / 食べている / バケモノだけ /
+//         はなれて 立つ / バケモノが たおれている / 人物Aだけ / なし）
 //   await monsterWalk(-1300, 1600)                       … バケモノが 横に うごく（距離, ミリ秒）
+//   await captiveWalk(-900, 1600)                        … 人物Aが 横に うごく（距離, ミリ秒）
+//   await throwItem()                                    … 主人公が 荷物を バケモノに 投げる
 //   await camera(マップのy, ミリ秒) / follow()           … カメラを うごかす / 主人公を おいかける に もどす
 //   await walkTo(マップのy, ミリ秒)                      … 主人公を 自動で あるかせる
 //   resetPlayer()                                        … 主人公を スタート位置に もどす
@@ -44,7 +48,6 @@ const STORY = {
   },
   playerStart: { x: 603, y: 3192 },  // 足もとの 位置
   walkSpeed: 330,                     // あるく速さ
-  monsterPos: { x: 590, y: 640 },     // バケモノの 足もと
 
   // ---------- オートモード（タイトルの「オートで みる」） ----------
   autoSpeed: 4,       // オートの速さ（1 = ふつう、4 = 4ばい速）
@@ -115,8 +118,10 @@ const STORY = {
         await say('???', 'やっと助けが来たのか…!', { face: 'captive' });       // (59)
         await say('主人公', 'な、なんだこのバケモノは・・・!', { face: 'hero' }); // (60)
         await wait(700);                                                    // (61)
-        monster('alone');                                                   // (62)(63) 食べられてしまう
+        monster('eat');                                                     // 食べられてしまう
         await wait(900);
+        monster('alone');
+        await wait(500);
         await say('バケモノ', '……………。', { face: 'monster' });             // (64)
         await monsterWalk(-1300, 3600);                                     // (65)〜(68)
         monster('none');
@@ -137,7 +142,7 @@ const STORY = {
         await fadeOut('white', 500);                                        // (83)
         await say('主人公', 'ッ！', { face: 'hero' });
         flags.loop = 2;
-        monster('full');
+        monster('apart');                                                   // 2周目は まだ つかまっていない
         resetPlayer();
         follow();
         await fadeIn(600);
@@ -162,23 +167,25 @@ const STORY = {
         await say('???', 'こいつをやっつけてくれ…!', { face: 'captive' });    // (94)
         await say('主人公', 'やっつける!?', { face: 'hero' });              // (95)
         await say('主人公', 'こんなこと初めてだ…。\nどうすればいいんだ?', { face: 'hero' }); // (96)
-        const item = await choose(['カセットテープ', 'ヘッドホンの\nコード', 'リュック\nそのもの'],
-          { speaker: '主人公の荷物' });                                       // (97)
+        const item = await choose(['カセットテープ', 'ヘッドホンの\nコード', 'リュック\nサック'],
+          { speaker: '主人公の荷物' });                                       // (44)
 
         // ---- ここから 導入シナリオ（Word「シナリオ_スタート」）。まだ 絵が ない所は note で 仮 ----
-        note(`「${item.replace('\n', '')}」で 追いはらう 絵は まだ ありません（仮）`);
         await say('主人公', 'これを使うの…か…？', { face: 'hero' });          // （動揺した表情）
-        await say('主人公', 'ッえい！', { face: 'hero' });
-        monster('alone');                                                   // 顔を 苦くしながら バケモノを 追いはらう
-        await monsterWalk(-1300, 1800);
-        monster('none');
-        note('人物Aが 立っている 絵は まだ ありません（仮）');
+        await say('主人公', 'えいっ！', { face: 'hero' });                   // (45)
+        await throwItem();                                                  // (47) 投げる
+        monster('down');                                                    // (49) たおれる
+        await wait(900);
+        monster('apart');                                                   // (51) おきあがる
+        await wait(500);
+        await monsterWalk(600, 1500);                                       // (53)(55)(57) 右へ にげる
+        monster('captive');
         await say('???', '少年！ありがとう！', { face: 'captive' });
         await say('???', '助けてもらったところ申し訳ないが、\n急いでるんだ！', { face: 'captive' });
         await say('???', 'またいつか会えたら\n必ずお礼をするよ！', { face: 'captive' });
         await say('???', 'ほんとありがとう！', { face: 'captive' });
-        note('人物Aが 清らかな笑顔で 去る（仮）');
-        await wait(800);
+        await captiveWalk(-700, 1800);                                      // 人物Aが 去る（仮の うごき）
+        monster('none');
         await say('主人公', 'あぁ…。', { face: 'hero' });
         await say('主人公', 'というか、どうなっているんだ？\n同じことが2回起きている…。', { face: 'hero' });
 

@@ -163,6 +163,58 @@ button { font: inherit; cursor: pointer; }
 .menuBtn:hover, .menuBtn.hover { color: #141f0e; }
 .menuBtn.small { width: auto; height: auto; padding: 0.4em 1.6em; font-size: 2.6em; margin-top: 1.5em; }
 
+/* ---------- セッティング（Figma 2：白い バー 828×70、点は 小・中・大） ---------- */
+#settings {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+.setRow {
+  position: absolute;
+  left: 15.6%;
+  width: 69.3%;
+  height: 8.4%;
+  background: #fff;
+  border-radius: 1.2em;
+}
+.setLabel {
+  position: absolute;
+  left: 0;
+  width: 49%;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: 3em;
+  letter-spacing: 0.06em;
+}
+.dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #6f6f6f;
+}
+.dot[data-level="0"] { left: 54.8%; width: 1.6em; height: 1.6em; }
+.dot[data-level="1"] { left: 70.8%; width: 2.8em; height: 2.8em; }
+.dot[data-level="2"] { left: 87.9%; width: 4em; height: 4em; }
+.dot.on { background: #000; }
+/* ゆびでも おしやすいように 当たりを 大きく */
+.dot::after { content: ''; position: absolute; inset: -1.6em; }
+#backBtn {
+  position: absolute;
+  left: 36.5%;
+  width: 27.5%;
+  top: 63.5%;
+  height: 8.6%;
+  background: #fff;
+  border: none;
+  border-radius: 1.2em;
+  font-size: 3.4em;
+  letter-spacing: 0.06em;
+}
+
 .howto {
   position: absolute;
   bottom: 3%;

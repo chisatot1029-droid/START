@@ -22,8 +22,12 @@
   const IMG = {
     map: load(MAP.image),
     player: load('assets/player.png'),
+    monster: load('assets/monster.png'),
     monsterFull: load('assets/monster_full.png'),
-    monsterAlone: load('assets/monster_alone.png'),
+    monsterEat: load('assets/monster_eat.png'),
+    monsterDown: load('assets/monster_down.png'),
+    captive: load('assets/captive.png'),
+    throwItem: load('assets/throw.png'),
     watch: load('assets/watch.png'),
     exclaim: load('assets/exclaim.png'),
   };
@@ -35,12 +39,20 @@
   };
   // 絵の中の「足もと」の位置（切りぬいた画像の中での px）
   const PLAYER_FOOT = { x: 64, y: 190 };
-  const MONSTER_FOOT = { x: 110, y: 200 };
+  // バケモノ・人物A の 絵を おく 場所（Figma の 画面の 位置 ＋ カメラ 140。絵の 左うえ）
+  const SPOT = {
+    full: { x: 530, y: 477 },      // つかまえている（12・17）
+    eat: { x: 530, y: 478 },       // 食べている（23）
+    alone: { x: 541, y: 478 },     // バケモノだけ（37）
+    monster: { x: 741, y: 478 },   // 2周目：はなれて 立っている（31・44）
+    down: { x: 727, y: 503 },      // 2周目：たおれている（49）
+    captive: { x: 530, y: 497 },   // 2周目：人物A（44）
+  };
 
   // ---------- 状態 ----------
   window.flags = {};
   let mode = 'title';              // title / play / event / end
-  let player, camY, followCam, monsterState, monsterDX, shown, done, eyelid;
+  let player, camY, followCam, monsterState, monsterDX, captiveDX, thrown, shown, done, eyelid;
   const keys = { left: false, right: false, up: false, down: false };
   let timeScale = 1;               // オート中は STORY.autoSpeed ばい速
 
@@ -51,6 +63,8 @@
     followCam = true;
     monsterState = 'full';
     monsterDX = 0;
+    captiveDX = 0;
+    thrown = null;
     shown = {};
     done = {};
     eyelid = 0;
@@ -189,7 +203,19 @@
   // ---- 絵 ----
   window.show = name => { shown[name] = true; };
   window.hide = name => { delete shown[name]; };
-  window.monster = state => { monsterState = state; monsterDX = 0; };
+  window.monster = state => { monsterState = state; monsterDX = 0; captiveDX = 0; };
+  window.captiveWalk = (dx, ms) => {
+    const from = captiveDX;
+    return tween(ms, p => { captiveDX = from + dx * p; });
+  };
+  // 主人公が 荷物を 投げる（主人公の 手もと → バケモノ）
+  window.throwItem = async (ms = 450) => {
+    const img = IMG.throwItem, m = SPOT.monster;
+    const x0 = player.x - img.width / 2, y0 = player.y - 150;
+    const x1 = m.x + 50, y1 = m.y + 50;
+    await tween(ms, p => { thrown = { x: x0 + (x1 - x0) * p, y: y0 + (y1 - y0) * p - Math.sin(p * Math.PI) * 80 }; });
+    thrown = null;
+  };
   window.monsterWalk = (dx, ms) => {
     const from = monsterDX;
     return tween(ms, p => { monsterDX = from + dx * p; });
@@ -310,7 +336,22 @@
 
   ui.dialog.addEventListener('click', advance);
   $('startBtn').addEventListener('click', startGame);
-  $('settingBtn').addEventListener('click', () => note('セッティングは まだ じゅんびちゅう です'));
+  // ---------- セッティング（音の 大きさ。0 = 小、1 = 中、2 = 大）----------
+  //   音は まだ ないので、えらんだ 大きさを おぼえておくだけ（window.settings）。
+  window.settings = { bgm: 1, se: 1 };
+  try { Object.assign(settings, JSON.parse(localStorage.getItem('starto.settings') || '{}')); } catch (e) {}
+  function showSettings() {
+    document.querySelectorAll('.dot').forEach(d => {
+      d.classList.toggle('on', settings[d.dataset.key] === Number(d.dataset.level));
+    });
+  }
+  document.querySelectorAll('.dot').forEach(d => d.addEventListener('click', () => {
+    settings[d.dataset.key] = Number(d.dataset.level);
+    try { localStorage.setItem('starto.settings', JSON.stringify(settings)); } catch (e) {}
+    showSettings();
+  }));
+  $('settingBtn').addEventListener('click', () => { showSettings(); $('settings').classList.remove('hidden'); });
+  $('backBtn').addEventListener('click', () => $('settings').classList.add('hidden'));
   $('againBtn').addEventListener('click', backToTitle);
   $('autoBtn').addEventListener('click', startAuto);
 
@@ -534,17 +575,21 @@
     const cy = Math.round(camY);
     if (ready(IMG.map)) ctx.drawImage(IMG.map, 0, -cy);
 
-    // バケモノ
-    if (monsterState !== 'none') {
-      const img = monsterState === 'full' ? IMG.monsterFull : IMG.monsterAlone;
-      const walking = monsterDX !== 0;
-      const bob = walking ? Math.abs(Math.sin(monsterDX / 40)) * -10 : 0;
-      if (ready(img)) {
-        ctx.drawImage(img,
-          Math.round(STORY.monsterPos.x - MONSTER_FOOT.x + monsterDX),
-          Math.round(STORY.monsterPos.y - MONSTER_FOOT.y - cy + bob));
-      }
-    }
+    // バケモノ・人物A
+    //   full：つかまえている / eat：食べている / alone：バケモノだけ
+    //   apart：人物A と バケモノ（はなれて 立つ）/ down：バケモノが たおれている / captive：人物Aだけ
+    const put = (img, spot, dx = 0, bob = 0) => {
+      if (ready(img)) ctx.drawImage(img, Math.round(spot.x + dx), Math.round(spot.y - cy + bob));
+    };
+    const bobM = monsterDX !== 0 ? Math.abs(Math.sin(monsterDX / 40)) * -10 : 0;
+    const bobC = captiveDX !== 0 ? Math.abs(Math.sin(captiveDX / 30)) * -8 : 0;
+    if (['apart', 'down', 'captive'].includes(monsterState)) put(IMG.captive, SPOT.captive, captiveDX, bobC);
+    if (monsterState === 'full') put(IMG.monsterFull, SPOT.full, monsterDX, bobM);
+    if (monsterState === 'eat') put(IMG.monsterEat, SPOT.eat, monsterDX, bobM);
+    if (monsterState === 'alone') put(IMG.monster, SPOT.alone, monsterDX, bobM);
+    if (monsterState === 'apart') put(IMG.monster, SPOT.monster, monsterDX, bobM);
+    if (monsterState === 'down') put(IMG.monsterDown, SPOT.down, monsterDX, bobM);
+    if (thrown && ready(IMG.throwItem)) ctx.drawImage(IMG.throwItem, Math.round(thrown.x), Math.round(thrown.y - cy));
 
     // 主人公（あるくと 少し ゆれる）
     const bob = player.moving ? Math.round(Math.abs(Math.sin(player.t * 11)) * -6) : 0;
