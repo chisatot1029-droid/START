@@ -53,7 +53,6 @@ const STORY = {
   //   上から 順番に つかう。なくなったら いちばん左の 選択肢を えらぶ。
   autoChoices: [
     'この場に残る', 'この場に残る', '助けに行く',
-    '止めない', '止める',
     'ヘッドホンのコード',
     '3つ隣の街で…。', '逃げる',
     '愛想笑いをする',
@@ -95,12 +94,15 @@ const STORY = {
       y: 3080,
       if: () => flags.loop === 1,
       run: async () => {
-        await say('', 'ピピピピッ…ピピピピッ…');                          // (53)
-        await say('主人公', 'なんだ？', { face: 'hero' });                  // (54)
+        // 1回目の 時計（シナリオ通り）
         show('watch');
-        await say('主人公', '時計…？\nこんなもの持ってたか？', { face: 'hero' }); // (55)
-        await say('', 'ピッ。');                                            // (56)
-        await say('主人公', '止まった。\n一体なんだったんだ？', { face: 'hero' }); // (57)
+        show('ring');
+        await say('', 'ピピピピピピッ…。');
+        await say('主人公', 'なんだ？\n時計なんて持っていたか？', { face: 'hero' });
+        await walkTo(2960, 1400);                                           // ゆっくり 歩き出すと
+        hide('ring');                                                       // アラームが 鳴り、止まる
+        await say('', 'ピッ…。');
+        await say('主人公', '勝手に止まった。\n一体何だったんだ。', { face: 'hero' });
         hide('watch');
       },
     },
@@ -120,21 +122,20 @@ const STORY = {
         monster('none');
         await walkTo(900, 700);                                             // (69)
         await say('主人公', 'え…？ 死んだ…？\n何が起きたんだ？', { face: 'hero' }); // (72)
+        // 2回目の 時計（シナリオ通り。呆然とする 主人公）
+        await wait(600);
         show('watch');
         show('ring');
-        await say('', 'ピピピピッピピピピッ…');                              // (73)
-        await say('主人公', 'また？', { face: 'hero' });                    // (74)
-        while ((await choose(['止める', '止めない'])) === '止めない') {      // (75)
-          note('「止めない」の先は まだ デザインがありません（仮）');
-          await say('', 'ピピピピッピピピピッ…');
-        }
-        hide('ring');
-        await say('', 'ピッ。');                                            // (76)
+        await say('', 'ピピピピッ。');
+        await say('主人公', 'こんな時にまたかよ。', { face: 'hero' });
+        await wait(400);
+        hide('ring');                                                       // 自ら 止める
+        await wait(500);
         hide('watch');
 
-        // ---- 時が もどる ----
+        // ---- 時が もどる（目の前が 光に 包まれる） ----
         await fadeOut('white', 500);                                        // (83)
-        await say('主人公', '!?', { face: 'hero' });                        // (84)
+        await say('主人公', 'ッ！', { face: 'hero' });
         flags.loop = 2;
         monster('full');
         resetPlayer();
