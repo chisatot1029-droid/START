@@ -19,7 +19,9 @@
 //       … バケモノと 人物Aの 絵（つかまえている / 食べている / バケモノだけ /
 //         はなれて 立つ / バケモノが たおれている / 人物Aだけ / なし）
 //   await monsterWalk(-1300, 1600)                       … バケモノが 横に うごく（距離, ミリ秒）
-//   await captiveWalk(-900, 1600)                        … 人物Aが 横に うごく（距離, ミリ秒）
+//   await captiveWalk(0, -700, 1800)                     … 人物Aが うごく（よこ, たて, ミリ秒）
+//   police('police' / 'kaitou' / 'none')                 … 警察（仮：青い人）/ 変装を といた 怪盗（仮：黄色い人）/ なし
+//   await policeWalk(0, 700, 1800)                       … 警察が うごく（よこ, たて, ミリ秒）。さいしょは 画面の 上の 外
 //   await throwItem()                                    … 主人公が 荷物を バケモノに 投げる
 //   await camera(マップのy, ミリ秒) / follow()           … カメラを うごかす / 主人公を おいかける に もどす
 //   await walkTo(マップのy, ミリ秒)                      … 主人公を 自動で あるかせる
@@ -184,15 +186,15 @@ const STORY = {
         await say('???', '助けてもらったところ申し訳ないが、\n急いでるんだ！', { face: 'captive' });
         await say('???', 'またいつか会えたら\n必ずお礼をするよ！', { face: 'captive' });
         await say('???', 'ほんとありがとう！', { face: 'captive' });
-        await captiveWalk(-700, 1800);                                      // 人物Aが 去る（仮の うごき）
+        await captiveWalk(53, -750, 2000);                                  // 人物Aが 去る：これから 行く 道（画面の 上）へ
         monster('none');
         await say('主人公', 'あぁ…。', { face: 'hero' });
         await say('主人公', 'というか、どうなっているんだ？\n同じことが2回起きている…。', { face: 'hero' });
 
         // ---- 警察 ----
-        show('exclaim');
-        note('奥の方から ドタバタと 足音が 聞こえる（仮）');
-        await wait(1200);
+        show('exclaim');                                                    // 奥の方から ドタバタと 足音
+        police('police');                                                   // 警察（仮：青い人）が 画面の 上から 来る
+        await policeWalk(0, 710, 1800);
         hide('exclaim');
         await say('警察', 'おいそこの君！ここらへんで\n事件が起きたと聞いたが、');
         await say('警察', '何か見なかったか！？');
@@ -221,7 +223,12 @@ const STORY = {
         await say('警察', 'さっきは助けてくれてありがとうな！');
         await say('主人公', '誰だ…？', { face: 'hero' });
         note('警察が 服を脱いで、さっきの 人物Aだと わかる（仮）');
-        await wait(1500);
+        for (let i = 0; i < 4; i++) {                                       // 青 → 黄色 に チカチカ 変わる
+          police('kaitou'); await wait(150);
+          police('police'); await wait(150);
+        }
+        police('kaitou');                                                   // 怪盗（仮：黄色い人）
+        await wait(700);
 
         // ---- 怪盗 ----
         await say('主人公', 'さっきの！', { face: 'hero' });
@@ -243,6 +250,7 @@ const STORY = {
         note('怪盗が 笑顔で 主人公の手を取り 走りだす（仮）');
         await wait(1200);
         await fadeOut('black', 800);
+        police('none');
 
         // ---- 怪盗の家の前（暗い通路を抜け、星空のもとに ポツンと たたずむ家） ----
         note('怪盗の家の前（星空と家）の 絵は まだ ありません（仮）');

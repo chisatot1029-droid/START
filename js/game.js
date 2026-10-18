@@ -27,6 +27,8 @@
     monsterEat: load('assets/monster_eat.png'),
     monsterDown: load('assets/monster_down.png'),
     captive: load('assets/captive.png'),
+    police: load('assets/police.png'),
+    kaitou: load('assets/kaitou.png'),
     throwItem: load('assets/throw.png'),
     watch: load('assets/watch.png'),
     exclaim: load('assets/exclaim.png'),
@@ -47,12 +49,13 @@
     monster: { x: 741, y: 478 },   // 2周目：はなれて 立っている（31・44）
     down: { x: 727, y: 503 },      // 2周目：たおれている（49）
     captive: { x: 530, y: 497 },   // 2周目：人物A（44）
+    police: { x: 582, y: -150 },   // 警察（仮）：画面の 上の 外から 出てくる
   };
 
   // ---------- 状態 ----------
   window.flags = {};
   let mode = 'title';              // title / play / event / end
-  let player, camY, followCam, monsterState, monsterDX, captiveDX, thrown, shown, done, eyelid;
+  let player, camY, followCam, monsterState, monsterDX, captiveDX, captiveDY, policeState, policeDX, policeDY, thrown, shown, done, eyelid;
   const keys = { left: false, right: false, up: false, down: false };
   let timeScale = 1;               // オート中は STORY.autoSpeed ばい速
 
@@ -64,6 +67,10 @@
     monsterState = 'full';
     monsterDX = 0;
     captiveDX = 0;
+    captiveDY = 0;
+    policeState = 'none';
+    policeDX = 0;
+    policeDY = 0;
     thrown = null;
     shown = {};
     done = {};
@@ -203,10 +210,19 @@
   // ---- 絵 ----
   window.show = name => { shown[name] = true; };
   window.hide = name => { delete shown[name]; };
-  window.monster = state => { monsterState = state; monsterDX = 0; captiveDX = 0; };
-  window.captiveWalk = (dx, ms) => {
-    const from = captiveDX;
-    return tween(ms, p => { captiveDX = from + dx * p; });
+  window.monster = state => { monsterState = state; monsterDX = 0; captiveDX = 0; captiveDY = 0; };
+  window.captiveWalk = (dx, dy, ms) => {
+    const fx = captiveDX, fy = captiveDY;
+    return tween(ms, p => { captiveDX = fx + dx * p; captiveDY = fy + dy * p; });
+  };
+  // 警察（仮：青い人）→ 変装を といた 怪盗（仮：黄色い人）
+  window.police = state => {
+    if (policeState === 'none') { policeDX = 0; policeDY = 0; }
+    policeState = state;
+  };
+  window.policeWalk = (dx, dy, ms) => {
+    const fx = policeDX, fy = policeDY;
+    return tween(ms, p => { policeDX = fx + dx * p; policeDY = fy + dy * p; });
   };
   // 主人公が 荷物を 投げる（主人公の 手もと → バケモノ）
   window.throwItem = async (ms = 450) => {
@@ -582,8 +598,10 @@
       if (ready(img)) ctx.drawImage(img, Math.round(spot.x + dx), Math.round(spot.y - cy + bob));
     };
     const bobM = monsterDX !== 0 ? Math.abs(Math.sin(monsterDX / 40)) * -10 : 0;
-    const bobC = captiveDX !== 0 ? Math.abs(Math.sin(captiveDX / 30)) * -8 : 0;
-    if (['apart', 'down', 'captive'].includes(monsterState)) put(IMG.captive, SPOT.captive, captiveDX, bobC);
+    const bobC = captiveDX || captiveDY ? Math.abs(Math.sin((captiveDX + captiveDY) / 30)) * -8 : 0;
+    if (['apart', 'down', 'captive'].includes(monsterState)) put(IMG.captive, SPOT.captive, captiveDX, captiveDY + bobC);
+    const bobP = policeDY > 0 && policeDY < 700 ? Math.abs(Math.sin(policeDY / 30)) * -8 : 0;
+    if (policeState !== 'none') put(policeState === 'kaitou' ? IMG.kaitou : IMG.police, SPOT.police, policeDX, policeDY + bobP);
     if (monsterState === 'full') put(IMG.monsterFull, SPOT.full, monsterDX, bobM);
     if (monsterState === 'eat') put(IMG.monsterEat, SPOT.eat, monsterDX, bobM);
     if (monsterState === 'alone') put(IMG.monster, SPOT.alone, monsterDX, bobM);
